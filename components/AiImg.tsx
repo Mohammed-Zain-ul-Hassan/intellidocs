@@ -9,7 +9,7 @@ const AIIcon = () => {
           alt="My Icon"
           height={300}
           width={300}
-          className="h-[10rem] lg:h-[20rem]"
+          className="h-[10rem]"
         />
       </div>
   );
