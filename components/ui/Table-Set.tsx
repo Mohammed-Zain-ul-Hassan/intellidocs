@@ -76,7 +76,7 @@ export function TableDemo() {
   const [filter, setFilter] = useState('')
 
   const handleSort = (type: string) => {
-    let sortedInvoices = [...invoices]
+    const sortedInvoices = [...invoices]
     switch(type) {
       case 'alphabetical':
         sortedInvoices.sort((a, b) => a.invoice.localeCompare(b.invoice))
