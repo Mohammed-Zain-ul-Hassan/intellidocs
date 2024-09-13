@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <div className="relative h-screen w-full p-2 bg-gradient-to-b from-blue-700 to-transparent">
       <Navbar />
-      <BackgroundBeams/>
+      <BackgroundBeams />
       <Headline />
       <AIIcon />
     </div>
