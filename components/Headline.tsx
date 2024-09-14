@@ -1,4 +1,5 @@
 import { TypewriterEffectSmooth } from "./ui/Typewriter";
+import Link from 'next/link';
 
 const Headline = () => {
   const words = [
@@ -11,7 +12,7 @@ const Headline = () => {
     { text: "Document" },
     { text: "Insights" },
   ];
-  
+
   const words2 = [
     { text: "Transform" },
     { text: "Your" },
@@ -41,9 +42,11 @@ const Headline = () => {
           delay={3} // Adjust this delay to control when the second effect starts
         />
         <div className='flex justify-center items-center w-full'>
-          <button className="mt-8 px-12 py-4 rounded-full tracking-widest uppercase font-bold dark:hover:text-neutral-200 hover:bg-transparent hover:shadow-[inset_0_0_0_2px_#616467] hover:animate-shimmer bg-[length:200%_100%] hover:bg-shimmer bg-gradient-to-r from-indigo-500 to-purple-500 text-white transition duration-200 transform hover:scale-105 shadow-lg">
-            Upload PDF
-          </button>
+          <Link href="/dashboard">
+            <button className="mt-8 px-12 py-4 rounded-full tracking-widest uppercase font-bold dark:hover:text-neutral-200 hover:bg-transparent hover:shadow-[inset_0_0_0_2px_#616467] hover:animate-shimmer bg-[length:200%_100%] hover:bg-shimmer bg-gradient-to-r from-indigo-500 to-purple-500 text-white transition duration-200 transform hover:scale-105 shadow-lg">
+              Upload PDF
+            </button>
+          </Link>
         </div>
       </div>
     </div>

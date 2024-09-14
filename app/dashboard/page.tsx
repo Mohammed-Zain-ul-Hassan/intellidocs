@@ -4,18 +4,26 @@ import Navbar from "@/components/Navbar"; // Adjust the path based on your folde
 import DocumentTable from "@/components/DocumentTable";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { getCurrentUser } from "@/app/appwrite/Services/authServices";
 
 const Dashboard = () => {
   const router = useRouter();
 
   // Check if the user is logged in
   useEffect(() => {
-    const userIsLoggedIn = typeof window !== "undefined" && localStorage.getItem("authToken");
-    
-    if (!userIsLoggedIn) {
-      // Redirect to signUp page if not logged in
-      router.push("/signup");
-    }
+    const checkUserSession = async () => {
+      try {
+        const user = await getCurrentUser(); // Fetch current user from Appwrite
+        if (!user) {
+          router.push("/signup"); // Redirect if no user is logged in
+        }
+      } catch (error) {
+        console.error("User is not logged in or session expired", error);
+        router.push("/signup"); // Redirect to sign-up page on error
+      }
+    };
+  
+    checkUserSession();
   }, [router]);
 
   return (

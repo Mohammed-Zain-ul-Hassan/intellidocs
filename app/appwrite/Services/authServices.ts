@@ -1,5 +1,5 @@
 import { account } from "../config";
-import { OAuthProvider } from "appwrite"; // Import the OAuthProvider from Appwrite
+import { OAuthProvider } from "appwrite";
 import { ID } from "appwrite";
 
 // Define User and Session types based on Appwrite's API response
@@ -25,7 +25,7 @@ export async function registerUser(username: string, email: string, password: st
     return user;
   } catch (error) {
     console.error("Registration error:", error);
-    throw error; // Rethrow the error for the caller to handle
+    throw error;
   }
 }
 
@@ -33,26 +33,39 @@ export async function registerUser(username: string, email: string, password: st
 export const signIn = async (email: string, password: string): Promise<Session> => {
   try {
     const session = await account.createSession(email, password);
-    localStorage.setItem("authToken", session.$id); // Store session ID
+    localStorage.setItem("authToken", session.$id);
     return session;
   } catch (error) {
     console.error("Login error:", error);
-    throw error; // Rethrow error for the caller to handle
+    throw error;
   }
 };
 
 // Google OAuth Sign-in
 export const signInWithGoogle = async (): Promise<void> => {
   try {
-    // Redirect to dashboard after successful sign-in, or to a specific auth page if it fails
     await account.createOAuth2Session(
       OAuthProvider.Google,
-      `${window.location.origin}/dashboard`, // Success redirect URL
-      `${window.location.origin}/sign-in` // Failure redirect URL
+      `${window.location.origin}/dashboard`,
+      `${window.location.origin}/sign-in`
     );
   } catch (error) {
     console.error("Google Sign-in error:", error);
-    throw error; // Rethrow error for the caller to handle
+    throw error;
+  }
+};
+
+// GitHub OAuth Sign-in
+export const signInWithGitHub = async (): Promise<void> => {
+  try {
+    await account.createOAuth2Session(
+      OAuthProvider.Github,
+      `${window.location.origin}/dashboard`,
+      `${window.location.origin}/sign-in`
+    );
+  } catch (error) {
+    console.error("GitHub Sign-in error:", error);
+    throw error;
   }
 };
 
@@ -63,39 +76,39 @@ export const signOutUser = async (): Promise<void> => {
     localStorage.removeItem("authToken");
   } catch (error) {
     console.error("Sign out error:", error);
-    throw error; // Rethrow error for the caller to handle
+    throw error;
   }
 };
 
 // Get the current authenticated user
 export const getCurrentUser = async (): Promise<User> => {
   try {
-    const user = await account.get(); // Fetch current user's data
+    const user = await account.get();
     return user;
   } catch (error) {
     console.error("Get user error:", error);
-    throw error; // Rethrow error for the caller to handle
+    throw error;
   }
 };
 
 // Check if the user is authenticated
 export const checkAuth = async (): Promise<boolean> => {
   try {
-    await account.get(); // If this succeeds, user is authenticated
+    await account.get();
     return true;
   } catch (error) {
-    console.warn("User not authenticated:", error); // Log warning instead of an error
-    return false; // If it fails, return false
+    console.warn("User not authenticated:", error);
+    return false;
   }
 };
 
 // Send password recovery email
 export const sendPasswordRecoveryEmail = async (email: string): Promise<void> => {
-  const resetPasswordUrl = `${window.location.origin}/reset-password`; // URL for password reset
+  const resetPasswordUrl = `${window.location.origin}/reset-password`;
   try {
     await account.createRecovery(email, resetPasswordUrl);
   } catch (error) {
     console.error("Password recovery error:", error);
-    throw error; // Rethrow error for the caller to handle
+    throw error;
   }
 };

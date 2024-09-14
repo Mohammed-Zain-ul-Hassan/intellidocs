@@ -8,18 +8,22 @@ import Link from 'next/link'
 import { Github } from 'lucide-react'
 import Image from 'next/image'
 import Logo from '@/components/icons/Logo.png'
-import { registerUser, signInWithGoogle } from '@/app/appwrite/Services/authServices'
+import { registerUser, signInWithGoogle, signInWithGitHub } from '@/app/appwrite/Services/authServices'
+import { useRouter } from 'next/navigation'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
+  const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      // Register the user
       const user = await registerUser(username, email, password)
       console.log('User registered:', user)
+      router.push('/dashboard')
       // Redirect to dashboard or perform other actions after successful sign-up
     } catch (error) {
       console.error('Sign-up error:', error)
@@ -34,6 +38,16 @@ export default function SignUpPage() {
     } catch (error) {
       console.error('Google sign-in error:', error)
       // Handle Google sign-in error
+    }
+  }
+
+  const handleGitHubSignIn = async () => {
+    try {
+      await signInWithGitHub()
+      // User will be redirected to GitHub sign-in page, and then to the dashboard or auth page
+    } catch (error) {
+      console.error('GitHub sign-in error:', error)
+      // Handle GitHub sign-in error
     }
   }
 
@@ -159,24 +173,27 @@ export default function SignUpPage() {
               </div>
 
               <div>
-                <a
-                  href="#"
+                <Button
+                  type="button"
                   className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-150 ease-in-out"
+                  onClick={handleGitHubSignIn}
                 >
                   <span className="sr-only">Sign up with GitHub</span>
-                  <Github className="w-5 h-5" />
-                </a>
+                  <Github className="h-5 w-5" />
+                </Button>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="mt-8 text-center text-sm text-gray-600 z-10">
-        Already have an account?{' '}
-        <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-          Log in
-        </Link>
+          <div className="mt-6">
+            <p className="text-center text-sm text-gray-600">
+              Already have an account?
+              <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500 ml-1">
+                Log in
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )

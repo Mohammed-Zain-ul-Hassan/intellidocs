@@ -13,25 +13,26 @@ import { ArrowUpDown, Search, PlusCircle, FileText, ChevronLeft, ChevronRight } 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 // Helper function to generate random file size
-const getRandomSize = () => {
-  const sizes = ['KB', 'MB']
-  const size = Math.floor(Math.random() * 1000) + 1
-  const unit = sizes[Math.floor(Math.random() * sizes.length)]
-  return `${size} ${unit}`
-}
+// const getRandomSize = () => {
+//   const sizes = ['KB', 'MB']
+//   const size = Math.floor(Math.random() * 1000) + 1
+//   const unit = sizes[Math.floor(Math.random() * sizes.length)]
+//   return `${size} ${unit}`
+// }
 
 const initialDocuments = [
-  { id: 1, name: "Project Proposal", format: "PDF", uploadTime: "2023-06-01T09:30:00Z", size: getRandomSize() },
-  { id: 2, name: "Financial Report", format: "XLSX", uploadTime: "2023-06-02T14:45:00Z", size: getRandomSize() },
-  { id: 3, name: "Meeting Minutes", format: "DOCX", uploadTime: "2023-06-03T11:15:00Z", size: getRandomSize() },
-  { id: 4, name: "Product Roadmap", format: "PNG", uploadTime: "2023-06-04T16:20:00Z", size: getRandomSize() },
-  { id: 5, name: "User Research", format: "PDF", uploadTime: "2023-06-05T10:00:00Z", size: getRandomSize() },
-  { id: 6, name: "Marketing Plan", format: "PPTX", uploadTime: "2023-06-06T13:30:00Z", size: getRandomSize() },
-  { id: 7, name: "Budget Forecast", format: "XLSX", uploadTime: "2023-06-07T15:45:00Z", size: getRandomSize() },
-  { id: 8, name: "Design Mockups", format: "AI", uploadTime: "2023-06-08T12:00:00Z", size: getRandomSize() },
-  { id: 9, name: "Code Review", format: "TXT", uploadTime: "2023-06-09T17:30:00Z", size: getRandomSize() },
-  { id: 10, name: "Client Presentation", format: "PPTX", uploadTime: "2023-06-10T09:15:00Z", size: getRandomSize() },
-]
+  { id: 1, name: "Project Proposal", format: "PDF", uploadTime: "2023-06-01T09:30:00Z", size: 1024 }, // 1 MB
+  { id: 2, name: "Financial Report", format: "XLSX", uploadTime: "2023-06-02T14:45:00Z", size: 2048 }, // 2 MB
+  { id: 3, name: "Meeting Minutes", format: "DOCX", uploadTime: "2023-06-03T11:15:00Z", size: 512 },  // 512 KB
+  { id: 4, name: "Product Roadmap", format: "PNG", uploadTime: "2023-06-04T16:20:00Z", size: 2560 },  // 2.5 MB
+  { id: 5, name: "User Research", format: "PDF", uploadTime: "2023-06-05T10:00:00Z", size: 1536 },    // 1.5 MB
+  { id: 6, name: "Marketing Plan", format: "PPTX", uploadTime: "2023-06-06T13:30:00Z", size: 3072 },  // 3 MB
+  { id: 7, name: "Budget Forecast", format: "XLSX", uploadTime: "2023-06-07T15:45:00Z", size: 4096 }, // 4 MB
+  { id: 8, name: "Design Mockups", format: "AI", uploadTime: "2023-06-08T12:00:00Z", size: 5120 },    // 5 MB
+  { id: 9, name: "Code Review", format: "TXT", uploadTime: "2023-06-09T17:30:00Z", size: 128 },      // 128 KB
+  { id: 10, name: "Client Presentation", format: "PPTX", uploadTime: "2023-06-10T09:15:00Z", size: 3584 } // 3.5 MB
+];
+
 
 export default function DocumentCards() {
   const [documents, setDocuments] = useState(initialDocuments)
