@@ -201,7 +201,7 @@ export default function DocumentCards() {
             >
               <X className="h-5 w-5" />
             </button>
-            <FileUploader onClose={()=>{}}/>
+            <FileUploader onClose={()=>{setIsModalOpen(false)}}/>
           </div>
         </div>
       )}
