@@ -9,15 +9,19 @@ import { Client, Storage } from 'appwrite' // Import Appwrite SDK
 
 // Initialize Appwrite
 const client = new Client()
-  .setEndpoint('YOUR_APPWRITE_ENDPOINT') // Replace with your Appwrite endpoint
-  .setProject('YOUR_PROJECT_ID') // Replace with your project ID
+  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!) // Use your Appwrite endpoint
+  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!) // Use your project ID
 
 const storage = new Storage(client)
 
 // Function to upload a file to Appwrite bucket
 const uploadFileToAppwrite = async (file: File): Promise<void> => {
   try {
-    const response = await storage.createFile('YOUR_BUCKET_ID', 'unique()', file)
+    const response = await storage.createFile(
+      process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!,
+      'unique()',
+      file
+    )
     console.log('File uploaded to Appwrite:', response)
   } catch (error) {
     console.error('Appwrite upload error:', error)
