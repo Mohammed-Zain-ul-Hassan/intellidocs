@@ -112,3 +112,13 @@ export const sendPasswordRecoveryEmail = async (email: string): Promise<void> =>
     throw error;
   }
 };
+
+// Reset password with userId, secret, and new password
+export const resetPassword = async (userId: string, secret: string, newPassword: string): Promise<void> => {
+  try {
+    await account.updateRecovery(userId, secret, newPassword);
+  } catch (error) {
+    console.error('Reset password error:', error);
+    throw error;
+  }
+};

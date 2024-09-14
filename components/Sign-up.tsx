@@ -15,19 +15,28 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
+
     try {
-      // Register the user
       const user = await registerUser(username, email, password)
       console.log('User registered:', user)
+
+      // Remember credentials if "Remember Me" is checked
+      if (rememberMe) {
+        localStorage.setItem('email', email)
+        localStorage.setItem('password', password)
+      } else {
+        localStorage.removeItem('email')
+        localStorage.removeItem('password')
+      }
+
       router.push('/dashboard')
-      // Redirect to dashboard or perform other actions after successful sign-up
     } catch (error) {
       console.error('Sign-up error:', error)
-      // Handle sign-up error
     }
   }
 
@@ -125,14 +134,18 @@ export default function SignUpPage() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Checkbox id="remember-me" />
+                <Checkbox
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                />
                 <Label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                   Remember me
                 </Label>
               </div>
 
               <div className="text-sm">
-                <Link href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
                   Forgot your password?
                 </Link>
               </div>

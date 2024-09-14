@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,16 +12,37 @@ import { signIn, signInWithGoogle, signInWithGitHub } from '@/app/appwrite/Servi
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState<string>('')
+  const [password, setPassword] = useState<string>('')
+  const [rememberMe, setRememberMe] = useState<boolean>(false)
   const router = useRouter()
+
+  // Load saved email/password if "Remember me" was checked
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('email')
+    const savedPassword = localStorage.getItem('password')
+    if (savedEmail && savedPassword) {
+      setEmail(savedEmail)
+      setPassword(savedPassword)
+      setRememberMe(true)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      // Handle login logic
       const session = await signIn(email, password)
       console.log('Logged in:', session)
+
+      // Save email/password if "Remember me" is checked
+      if (rememberMe) {
+        localStorage.setItem('email', email)
+        localStorage.setItem('password', password)
+      } else {
+        localStorage.removeItem('email')
+        localStorage.removeItem('password')
+      }
+
       router.push('/dashboard')
     } catch (error) {
       console.error('Login error:', error)
@@ -32,26 +53,23 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle()
-      // User will be redirected to Google sign-in page, and then to the dashboard or auth page
+      // Redirect to dashboard or auth page
     } catch (error) {
       console.error('Google sign-in error:', error)
-      // Handle Google sign-in error
     }
   }
 
   const handleGitHubSignIn = async () => {
     try {
       await signInWithGitHub()
-      // User will be redirected to GitHub sign-in page, and then to the dashboard or auth page
+      // Redirect to dashboard or auth page
     } catch (error) {
       console.error('GitHub sign-in error:', error)
-      // Handle GitHub sign-in error
     }
   }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-8 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Decorative background pattern */}
       <div className="absolute inset-0 z-0 bg-white bg-opacity-70">
         <div className="absolute inset-0" style={{
           backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
@@ -105,7 +123,11 @@ export default function LoginPage() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Checkbox id="remember-me" />
+                <Checkbox
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={() => setRememberMe(!rememberMe)}
+                />
                 <Label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                   Remember me
                 </Label>
@@ -154,13 +176,22 @@ export default function LoginPage() {
                   className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-150 ease-in-out"
                   onClick={handleGitHubSignIn}
                 >
-                  <span className="sr-only">Sign up with GitHub</span>
-                  <Github className="h-5 w-5" />
+                  <span className="sr-only">Sign in with GitHub</span>
+                  <Github className="h-5 w-5" aria-hidden="true" />
                 </Button>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
+        <p className="text-sm text-gray-600">
+          Don&apos;t have an account?{' '}
+          <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+            Sign up
+          </Link>
+        </p>
       </div>
     </div>
   )
