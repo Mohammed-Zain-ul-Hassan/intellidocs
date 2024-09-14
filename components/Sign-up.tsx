@@ -5,18 +5,36 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from 'next/link'
-import { Github} from 'lucide-react'
+import { Github } from 'lucide-react'
 import Image from 'next/image'
 import Logo from '@/components/icons/Logo.png'
+import { registerUser, signInWithGoogle } from '@/app/appwrite/Services/authServices'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle sign-up logic here
-    console.log('Sign up with:', email, password)
+    try {
+      const user = await registerUser(username, email, password)
+      console.log('User registered:', user)
+      // Redirect to dashboard or perform other actions after successful sign-up
+    } catch (error) {
+      console.error('Sign-up error:', error)
+      // Handle sign-up error
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle()
+      // User will be redirected to Google sign-in page, and then to the dashboard or auth page
+    } catch (error) {
+      console.error('Google sign-in error:', error)
+      // Handle Google sign-in error
+    }
   }
 
   return (
@@ -36,7 +54,25 @@ export default function SignUpPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md z-10">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-200">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSignUp}>
+            <div>
+              <Label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
+              </Label>
+              <div className="mt-1">
+                <Input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  required
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+            </div>
+
             <div>
               <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
@@ -110,15 +146,16 @@ export default function SignUpPage() {
 
             <div className="mt-6 grid grid-cols-2 gap-3">
               <div>
-                <a
-                  href="#"
+                <Button
+                  type="button"
                   className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-150 ease-in-out"
+                  onClick={handleGoogleSignIn}
                 >
                   <span className="sr-only">Sign up with Google</span>
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
                   </svg>
-                </a>
+                </Button>
               </div>
 
               <div>
@@ -137,7 +174,7 @@ export default function SignUpPage() {
 
       <div className="mt-8 text-center text-sm text-gray-600 z-10">
         Already have an account?{' '}
-        <Link href="#" className="font-medium text-blue-600 hover:text-blue-500">
+        <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
           Log in
         </Link>
       </div>
