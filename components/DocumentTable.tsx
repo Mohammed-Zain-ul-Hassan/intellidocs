@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -9,38 +9,60 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowUpDown, Search, PlusCircle, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowUpDown, Search, PlusCircle, FileText, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import FileUploader from './DocUpload' // Assuming DocUpload is the FileUploader component
+import storageServices from '@/app/appwrite/Services/storageServices' // Assuming storageServices is the file
 
-// Helper function to generate random file size
-// const getRandomSize = () => {
-//   const sizes = ['KB', 'MB']
-//   const size = Math.floor(Math.random() * 1000) + 1
-//   const unit = sizes[Math.floor(Math.random() * sizes.length)]
-//   return `${size} ${unit}`
-// }
-
-const initialDocuments = [
-  { id: 1, name: "Project Proposal", format: "PDF", uploadTime: "2023-06-01T09:30:00Z", size: 1024 }, // 1 MB
-  { id: 2, name: "Financial Report", format: "XLSX", uploadTime: "2023-06-02T14:45:00Z", size: 2048 }, // 2 MB
-  { id: 3, name: "Meeting Minutes", format: "DOCX", uploadTime: "2023-06-03T11:15:00Z", size: 512 },  // 512 KB
-  { id: 4, name: "Product Roadmap", format: "PNG", uploadTime: "2023-06-04T16:20:00Z", size: 2560 },  // 2.5 MB
-  { id: 5, name: "User Research", format: "PDF", uploadTime: "2023-06-05T10:00:00Z", size: 1536 },    // 1.5 MB
-  { id: 6, name: "Marketing Plan", format: "PPTX", uploadTime: "2023-06-06T13:30:00Z", size: 3072 },  // 3 MB
-  { id: 7, name: "Budget Forecast", format: "XLSX", uploadTime: "2023-06-07T15:45:00Z", size: 4096 }, // 4 MB
-  { id: 8, name: "Design Mockups", format: "AI", uploadTime: "2023-06-08T12:00:00Z", size: 5120 },    // 5 MB
-  { id: 9, name: "Code Review", format: "TXT", uploadTime: "2023-06-09T17:30:00Z", size: 128 },      // 128 KB
-  { id: 10, name: "Client Presentation", format: "PPTX", uploadTime: "2023-06-10T09:15:00Z", size: 3584 } // 3.5 MB
-];
-
+type Document = {
+  id: string;
+  name: string;
+  format: string;
+  uploadTime: string;
+  size: number; // Size in KB or MB (example)
+};
 
 export default function DocumentCards() {
-  const [documents, setDocuments] = useState(initialDocuments)
-  const [filter, setFilter] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
+  const [documents, setDocuments] = useState<Document[]>([])
+  const [filter, setFilter] = useState<string>('')
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [isModalOpen, setIsModalOpen] = useState(false) // State to control modal visibility
   const documentsPerPage = 15 // Change to 12 if needed
 
-  const handleSort = (key: 'name' | 'format' | 'uploadTime' | 'size') => {
+  // Fetch documents from the Appwrite storage bucket
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      const storageId = process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!
+      const storage = storageServices[storageId]
+
+      if (!storage) {
+        console.error(`Storage service with ID "${storageId}" not found`)
+        return
+      }
+
+      try {
+        const files = await storage.listFiles()
+        if (files.total === 0) {
+          // No documents available
+          setDocuments([])
+        } else {
+          const fetchedDocuments: Document[] = files.files.map((file) => ({
+            id: file.$id,
+            name: file.name,
+            format: file.mimeType.split('/').pop() || 'Unknown',
+            uploadTime: file.$createdAt,
+            size: file.sizeOriginal,
+          }))
+          setDocuments(fetchedDocuments)
+        }
+      } catch (error) {
+        console.error('Error fetching documents:', error)
+      }
+    }
+    fetchDocuments()
+  }, [])
+
+  const handleSort = (key: keyof Document) => {
     const sortedDocuments = [...documents].sort((a, b) => {
       if (a[key] < b[key]) return -1
       if (a[key] > b[key]) return 1
@@ -70,7 +92,11 @@ export default function DocumentCards() {
   }
 
   const handleAddDocument = () => {
-    console.log("Add new document")
+    setIsModalOpen(true) // Show the modal when "Add Document" is clicked
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false) // Close modal
   }
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
@@ -119,45 +145,66 @@ export default function DocumentCards() {
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {currentDocuments.map((doc) => (
-          <Card key={doc.id} className="flex flex-col bg-gray-100 hover:shadow-lg transition-shadow duration-200">
-            <CardHeader className="flex-grow p-4">
-              <div className="flex justify-center mb-2">
-                <FileText className="h-8 w-8 text-blue-500" />
-              </div>
-              <CardTitle className="text-center text-sm truncate">{doc.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <p className="text-xs text-gray-500 text-center">{doc.format} • {doc.size}</p>
-            </CardContent>
-            <CardFooter className="text-xs text-gray-400 justify-center p-2">
-              {formatDate(doc.uploadTime)}
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-      <div className="flex justify-center mt-6">
-        <Button 
-          variant="outline" 
-          onClick={() => paginate(currentPage - 1)} 
-          disabled={currentPage === 1}
-          className="mr-2"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <span className="mx-4 self-center">
-          Page {currentPage} of {totalPages}
-        </span>
-        <Button 
-          variant="outline" 
-          onClick={() => paginate(currentPage + 1)} 
-          disabled={currentPage === totalPages}
-          className="ml-2"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      {documents.length === 0 ? (
+        <p className="text-center text-gray-500">No documents yet</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {currentDocuments.map((doc) => (
+              <Card key={doc.id} className="flex flex-col bg-gray-100 hover:shadow-lg transition-shadow duration-200">
+                <CardHeader className="flex-grow p-4">
+                  <div className="flex justify-center mb-2">
+                    <FileText className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <CardTitle className="text-center text-sm truncate">{doc.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-2">
+                  <p className="text-xs text-gray-500 text-center">{doc.format} • {doc.size}</p>
+                </CardContent>
+                <CardFooter className="text-xs text-gray-400 justify-center p-2">
+                  {formatDate(doc.uploadTime)}
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+          <div className="flex justify-center mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => paginate(currentPage - 1)} 
+              disabled={currentPage === 1}
+              className="mr-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="mx-4 self-center">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button 
+              variant="outline" 
+              onClick={() => paginate(currentPage + 1)} 
+              disabled={currentPage === totalPages}
+              className="ml-2"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </>
+      )}
+
+      {/* Modal for adding document */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative w-full max-w-lg p-4 bg-white rounded-lg shadow-lg">
+            <button 
+              onClick={closeModal} 
+              className="absolute top-3 right-3 p-1 text-gray-600 hover:text-gray-900"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <FileUploader onClose={()=>{}}/>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

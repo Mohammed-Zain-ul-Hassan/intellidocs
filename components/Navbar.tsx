@@ -1,4 +1,5 @@
 'use client'
+
 import Image from "next/image";
 import Logo from "./icons/Logo-lg-w.png";
 import { useEffect, useState } from "react";
@@ -14,9 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 
-const Navbar = () => {
+export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   interface User {
     name: string;
@@ -60,10 +61,6 @@ const Navbar = () => {
     router.push("/");
   };
 
-  const handleUpdateProfile = () => {
-    router.push("/profile");
-  };
-
   return (
     <nav className="p-4 z-50">
       <div className="flex justify-between items-center py-0">
@@ -100,20 +97,13 @@ const Navbar = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="my-1 border-blue-700" />
-                
-                {/* Update Profile Button */}
-                <DropdownMenuItem 
-                  onClick={handleUpdateProfile} 
-                  className="cursor-pointer px-4 py-2 text-gray-900 hover:bg-blue-600 hover:text-white transition-all duration-300 rounded-md"
-                >
-                  Update Profile
-                </DropdownMenuItem>
 
-                {/* Logout Button */}
+                {/* Logout Button with Icon */}
                 <DropdownMenuItem 
                   onClick={handleLogout} 
-                  className="cursor-pointer px-4 py-2 text-gray-900 hover:bg-blue-600 hover:text-white transition-all duration-300 rounded-md"
+                  className="cursor-pointer px-4 py-2 text-gray-900 hover:bg-blue-600 hover:text-white transition-all duration-300 rounded-md flex items-center"
                 >
+                  <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -141,6 +131,4 @@ const Navbar = () => {
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

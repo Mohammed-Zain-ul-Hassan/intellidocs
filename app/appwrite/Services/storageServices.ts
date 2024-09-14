@@ -5,7 +5,7 @@ import { ID, Models, Query } from "appwrite";
 type FilePayload = File | Blob;
 
 interface StorageService {
-  createFile: (file: FilePayload, id?: string) => Promise<Models.File>;
+  createFile: (file: FilePayload, id: string,userId: string) => Promise<Models.File>;
   deleteFile: (id: string) => Promise<Record<string, never>>;
   getFile: (id: string) => Promise<Models.File>;
   getFileDownload: (id: string) => Promise<string>;
@@ -27,9 +27,9 @@ const storageServices: Record<string, StorageService> = {};
 // Loop through the buckets to create the storage services
 buckets.forEach((bucket) => {
   storageServices[bucket.name] = {
-    createFile: async (file: FilePayload, id = ID.unique()) => {
+    createFile: async (file: FilePayload, id = ID.unique(), userId: string) => {
       // If the file is a Blob, convert it to a File
-      const fileToUpload = file instanceof File ? file : blobToFile(file, "default_filename");
+      const fileToUpload = file instanceof File ? file : blobToFile(file, userId);
       return await storage.createFile(bucket.id, id, fileToUpload); // Create the file with proper File object
     },
 

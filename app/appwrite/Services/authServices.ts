@@ -1,6 +1,7 @@
-import { account } from "../config";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { OAuthProvider } from "appwrite";
 import { ID } from "appwrite";
+import { account, filesBucket, profileBucket, storage } from "../config";
 
 // Define User and Session types based on Appwrite's API response
 interface User {
@@ -119,6 +120,96 @@ export const resetPassword = async (userId: string, secret: string, newPassword:
     await account.updateRecovery(userId, secret, newPassword);
   } catch (error) {
     console.error('Reset password error:', error);
+    throw error;
+  }
+};
+
+// In authServices.ts
+
+export const updateUserProfile = async (
+  name: string,
+  email: string,
+  currentPassword: string, // Include current password for email update
+  profilePicture: File | null
+): Promise<void> => {
+  try {
+    // Update user name
+    await account.updateName(name);
+
+    // Update user email
+    await account.updateEmail(email, currentPassword); // Pass the current password
+
+    // If a profile picture is provided
+    if (profilePicture) {
+      const fileId = ID.unique(); // Generate a unique ID for the file
+
+      console.log(profileBucket, fileId, profilePicture);
+      // Upload profile picture to Appwrite's storage
+      const uploadedFile = await storage.createFile(
+        profileBucket, // Replace with your Appwrite bucket ID
+        fileId,           // Unique file ID
+        profilePicture    // File to be uploaded
+      );
+
+      // Get the file URL for displaying
+      const fileUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_APPWRITE_PROFILE_ID}/files/${uploadedFile.$id}/view`;
+
+      // Save the file URL to user preferences or a database
+      console.log("Uploaded Profile Picture URL:", fileUrl);
+      // Perform additional actions as needed (e.g., updating a user profile in a database)
+    }
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    throw error;
+  }
+};
+
+// Uploading a file to the profile bucket
+export const uploadProfilePicture = async (file: File): Promise<void> => {
+  try {
+    const fileId = ID.unique(); // Generate a unique ID for the file
+
+    // Attempt to upload the file
+    await uploadWithRetry(profileBucket, fileId, file);
+
+    console.log('Profile picture uploaded successfully.');
+  } catch (error) {
+    console.error('Error uploading profile picture:', error);
+    throw error;
+  }
+};
+
+// Function to handle retry logic
+const uploadWithRetry = async (bucketId: string, fileId: string, file: File) => {
+  try {
+    // Try to upload the file
+    await storage.createFile(bucketId, fileId, file);
+  } catch (error: any) {
+    // If an error occurs and it's due to the same fileId, regenerate a new one and retry
+    if (error.message.includes('A target with the same ID already exists')) {
+      console.warn(`File ID ${fileId} already exists. Generating a new ID and retrying...`);
+      const newFileId = `${ID.unique()}-${Date.now()}`; // Generate a new ID
+      await storage.createFile(bucketId, newFileId, file); // Retry with the new ID
+    } else {
+      // Rethrow other errors
+      throw error;
+    }
+  }
+};
+
+
+// Uploading a file to the files bucket
+export const uploadPDF = async (file: File): Promise<void> => {
+  try {
+    const fileId = ID.unique(); // Generate a unique ID for the file
+    await storage.createFile(
+      filesBucket, // Use the files bucket ID
+      fileId,
+      file
+    );
+    console.log('PDF uploaded successfully.');
+  } catch (error) {
+    console.error('Error uploading PDF:', error);
     throw error;
   }
 };
