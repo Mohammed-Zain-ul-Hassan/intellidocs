@@ -12,14 +12,14 @@ import {
 import { ArrowUpDown, Search, PlusCircle, FileText, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import FileUploader from './DocUpload' // Assuming DocUpload is the FileUploader component
-import storageServices from '@/app/appwrite/Services/storageServices' // Assuming storageServices is the file
+import storageServices from '@/app/appwrite/Services/storageServices' // Ensure correct path
 
 type Document = {
   id: string;
   name: string;
   format: string;
   uploadTime: string;
-  size: number; // Size in KB or MB (example)
+  size: number; // Size in bytes
 };
 
 export default function DocumentCards() {
@@ -27,13 +27,15 @@ export default function DocumentCards() {
   const [filter, setFilter] = useState<string>('')
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [isModalOpen, setIsModalOpen] = useState(false) // State to control modal visibility
-  const documentsPerPage = 15 // Change to 12 if needed
+  const documentsPerPage = 12 // Set the number of documents per page
 
   // Fetch documents from the Appwrite storage bucket
   useEffect(() => {
     const fetchDocuments = async () => {
       const storageId = process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!
-      const storage = storageServices[storageId]
+      
+      
+      const storage = storageServices.files;
 
       if (!storage) {
         console.error(`Storage service with ID "${storageId}" not found`)
@@ -44,8 +46,10 @@ export default function DocumentCards() {
         const files = await storage.listFiles()
         if (files.total === 0) {
           // No documents available
+          console.log('no files yet')
           setDocuments([])
         } else {
+          console.log('files do exist')
           const fetchedDocuments: Document[] = files.files.map((file) => ({
             id: file.$id,
             name: file.name,
@@ -159,8 +163,9 @@ export default function DocumentCards() {
                   <CardTitle className="text-center text-sm truncate">{doc.name}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-2">
-                  <p className="text-xs text-gray-500 text-center">{doc.format} • {doc.size}</p>
-                </CardContent>
+                  <p className="text-xs text-gray-500 text-center">{doc.format} • {(doc.size / 1048576).toFixed(2)} MB</p>
+                </CardContent>`
+
                 <CardFooter className="text-xs text-gray-400 justify-center p-2">
                   {formatDate(doc.uploadTime)}
                 </CardFooter>
@@ -201,7 +206,7 @@ export default function DocumentCards() {
             >
               <X className="h-5 w-5" />
             </button>
-            <FileUploader onClose={()=>{setIsModalOpen(false)}}/>
+            <FileUploader onClose={closeModal} />
           </div>
         </div>
       )}

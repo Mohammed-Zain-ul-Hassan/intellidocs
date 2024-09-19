@@ -3,7 +3,7 @@ import AiIcon from '@/components/icons/Ai.svg';
 
 const AIIcon = () => {
   return (
-    <div className="absolute bottom-0 right-[3rem] z-[5]">
+    <div className="absolute bottom-0 right-[3rem] z-[5] hidden lg:block">
       <Image
         src={AiIcon}
         alt="AI Icon"
