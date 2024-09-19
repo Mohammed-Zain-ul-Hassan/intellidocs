@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Logo from "./icons/Logo-lg-w.png";
+import Logosm from "./icons/Logo.png";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentUser, signOutUser } from "@/app/appwrite/Services/authServices";
@@ -19,6 +20,8 @@ import { User, LogOut } from "lucide-react";
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  
   interface User {
     name: string;
     email: string;
@@ -46,6 +49,21 @@ export default function Navbar() {
     checkUserSession();
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth <= 768); // Adjust this value as needed
+    };
+
+    // Set the initial screen size
+    handleResize();
+
+    // Add resize event listener
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup the event listener on unmount
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const handleLogout = async () => {
     try {
       await signOutUser();
@@ -65,7 +83,7 @@ export default function Navbar() {
     <nav className="p-4 z-50">
       <div className="flex justify-between items-center py-0">
         <Image
-          src={Logo}
+          src={isSmallScreen ? Logosm : Logo}
           alt="IntelliDocs"
           height={200}
           width={200}
@@ -76,14 +94,14 @@ export default function Navbar() {
           {isLoggedIn ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full border border-blue-700 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={user?.profilePicture} alt={user?.name} className="rounded-full" />
-                  <AvatarFallback className="bg-blue-600 text-white">
-                    {user?.name?.charAt(0) || <User className="h-6 w-6" />}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full border border-blue-700 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={user?.profilePicture} alt={user?.name} className="rounded-full" />
+                    <AvatarFallback className="bg-blue-600 text-white">
+                      {user?.name?.charAt(0) || <User className="h-6 w-6" />}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
                 className="w-56 bg-white border border-blue-700 shadow-md rounded-lg transition-all duration-300 transform hover:shadow-lg"
@@ -98,7 +116,6 @@ export default function Navbar() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="my-1 border-blue-700" />
 
-                {/* Logout Button with Icon */}
                 <DropdownMenuItem 
                   onClick={handleLogout} 
                   className="cursor-pointer px-4 py-2 text-gray-900 hover:bg-blue-600 hover:text-white transition-all duration-300 rounded-md flex items-center"
@@ -110,15 +127,12 @@ export default function Navbar() {
             </DropdownMenu>
           ) : (
             <>
-              {/* Sign In Button (Outline) */}
               <button
                 className="px-4 py-2 border text-white border-blue-700 rounded-md cursor-pointer transition-all duration-300 ease-in-out hover:bg-blue-600 hover:text-white transform hover:scale-105"
                 onClick={() => router.push("/signup")}
               >
                 Sign In
               </button>
-
-              {/* Login Button (Filled) */}
               <button
                 className="px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer transition-all duration-300 ease-in-out hover:bg-blue-700 hover:text-blue-100 transform hover:scale-105"
                 onClick={() => router.push("/login")}
