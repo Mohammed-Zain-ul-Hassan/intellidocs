@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Logo from "./icons/Logo-lg-w.png"
-import Logosm from "./icons/Logo.png"
+//import Logosm from "./icons/Logo.png"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getCurrentUser, signOutUser } from "@/app/appwrite/Services/authServices"
@@ -82,7 +82,7 @@ export default function Navbar() {
     <nav className="p-2 md:p-4 z-50 bg-transparent">
       <div className="flex justify-between items-center py-0 max-w-7xl mx-auto">
         <Image
-          src={isSmallScreen ? Logosm : Logo}
+          src={isSmallScreen ? Logo : Logo}
           alt="IntelliDocs"
           height={isSmallScreen ? 50 : 50}
           width={isSmallScreen ? 100 : 200}
