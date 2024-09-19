@@ -85,7 +85,7 @@ export default function Navbar() {
           src={isSmallScreen ? Logo : Logo}
           alt="IntelliDocs"
           height={isSmallScreen ? 50 : 50}
-          width={isSmallScreen ? 100 : 200}
+          width={isSmallScreen ? 200 : 200}
           className="cursor-pointer"
           onClick={handleLogoClick}
         />
