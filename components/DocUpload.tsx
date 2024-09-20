@@ -100,7 +100,7 @@ export default function DocUpload({ onClose }: { onClose: () => void }) {
             className="w-full bg-blue-500 hover:bg-blue-600 text-white"
             disabled={!file || isUploading}
           >
-            {isUploading ? 'Uploading...' : 'Upload to Database'}
+            {isUploading ? 'Uploading...' : 'Upload File'}
           </Button>
 
           {uploadSuccess && (
