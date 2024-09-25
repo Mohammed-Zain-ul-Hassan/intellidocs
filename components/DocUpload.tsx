@@ -5,31 +5,73 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { UploadIcon, FileIcon, CheckCircleIcon } from 'lucide-react'
-import { Client, Storage } from 'appwrite' // Import Appwrite SDK
+import { Client, Storage, Databases, Query, ID } from 'appwrite' // Import Appwrite SDK
 
 // Initialize Appwrite
 const client = new Client()
-  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!) // Use your Appwrite endpoint
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!) // Use your project ID
+  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!) // Your Appwrite endpoint
+  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!) // Your Appwrite project ID
 
 const storage = new Storage(client)
+const databases = new Databases(client)
 
-// Function to upload a file to Appwrite bucket
-const uploadFileToAppwrite = async (file: File): Promise<void> => {
+const uploadFileToAppwrite = async (file: File): Promise<string> => {
   try {
     const response = await storage.createFile(
-      process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!,
-      'unique()',
+      process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!, // Bucket ID
+      ID.unique(), // Unique ID for the file
       file
     )
     console.log('File uploaded to Appwrite:', response)
+    return response.$id // Return the document ID
   } catch (error) {
     console.error('Appwrite upload error:', error)
     throw error
   }
 }
 
-export default function DocUpload({ onClose }: { onClose: () => void }) {
+const addDocumentToUser = async (userId: string, documentId: string) => {
+  try {
+    const userDocId = process.env.NEXT_PUBLIC_APPWRITE_USERDOC_ID! // Collection ID
+
+    // Check if the user already has a document association
+    const userDocuments = await databases.listDocuments(
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!, // Database ID
+      userDocId, // Collection ID
+      [Query.equal('userId', userId)]
+    )
+
+    if (userDocuments.documents.length > 0) {
+      // If user already has a document association, append the new document ID
+      const existingDoc = userDocuments.documents[0]
+      const updatedDocumentIds = [...existingDoc.documentIds, documentId]
+
+      // Update the document with the new document ID
+      await databases.updateDocument(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+        userDocId,
+        existingDoc.$id,
+        { documentIds: updatedDocumentIds }
+      )
+    } else {
+      // Create a new document association if it doesn't exist
+      await databases.createDocument(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+        userDocId,
+        ID.unique(),
+        {
+          userId: userId,
+          documentIds: [documentId]
+        }
+      )
+    }
+  } catch (error) {
+    console.error('Error adding document to user:', error)
+    throw error
+  }
+}
+
+export default function DocUpload({ onClose, userId }: { onClose: () => void, userId: string }) {
   const [file, setFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
@@ -55,7 +97,8 @@ export default function DocUpload({ onClose }: { onClose: () => void }) {
 
     setIsUploading(true)
     try {
-      await uploadFileToAppwrite(file)
+      const documentId = await uploadFileToAppwrite(file)
+      await addDocumentToUser(userId, documentId) // Associate the file with the user
       setUploadSuccess(true)
     } catch (error) {
       console.error('Upload failed:', error)

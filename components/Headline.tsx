@@ -1,7 +1,13 @@
+'use client'
 import { TypewriterEffectSmooth } from "./ui/Typewriter";
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { getCurrentUser } from "@/app/appwrite/Services/authServices"; // Import your auth service
+import { useState } from 'react';
 
 const Headline = () => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
   const words = [
     { text: "Upload," },
     { text: "Ask," },
@@ -20,6 +26,24 @@ const Headline = () => {
     { text: "into" },
     { text: "Knowledge" },
   ];
+
+  // Check user session before navigating
+  const handleUploadClick = async () => {
+    setLoading(true);
+    try {
+      const user = await getCurrentUser(); // Fetch current user from Appwrite
+      if (user) {
+        router.push("/dashboard"); // Redirect to dashboard if user is logged in
+      } else {
+        router.push("/signup"); // Redirect to signup if no user is logged in
+      }
+    } catch (error) {
+      console.error("Error checking user session", error);
+      router.push("/signup"); // Redirect to signup on error
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="absolute min-w-[100%] left-1/2 top-[25%] transform -translate-x-1/2 flex flex-col items-center z-0">
@@ -42,11 +66,13 @@ const Headline = () => {
           delay={3} // Adjust this delay to control when the second effect starts
         />
         <div className='flex justify-center items-center w-full'>
-          <Link href="/dashboard">
-            <button className="mt-8 px-12 py-4 rounded-full tracking-widest uppercase font-bold dark:hover:text-neutral-200 hover:bg-transparent hover:shadow-[inset_0_0_0_2px_#616467] hover:animate-shimmer bg-[length:200%_100%] hover:bg-shimmer bg-gradient-to-r from-indigo-500 to-purple-500 text-white transition duration-200 transform hover:scale-105 shadow-lg">
-              Upload PDF
-            </button>
-          </Link>
+          <button
+            onClick={handleUploadClick}
+            disabled={loading}
+            className={`mt-8 px-12 py-4 rounded-full tracking-widest uppercase font-bold dark:hover:text-neutral-200 hover:bg-transparent hover:shadow-[inset_0_0_0_2px_#616467] hover:animate-shimmer bg-[length:200%_100%] hover:bg-shimmer bg-gradient-to-r from-indigo-500 to-purple-500 text-white transition duration-200 transform hover:scale-105 shadow-lg ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {loading ? "Checking..." : "Upload PDF"}
+          </button>
         </div>
       </div>
     </div>

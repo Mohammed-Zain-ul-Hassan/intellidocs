@@ -3,7 +3,7 @@ import { collections } from "../collections";
 import { databaseId, databases } from "../config";
 
 type Payload = {
-  [key: string]: string | number | boolean | object | null;
+  [key: string]: string | number | boolean | object | null | undefined; // Allow undefined values
 };
 
 interface DBService {
@@ -27,7 +27,7 @@ collections.forEach((col) => {
     get: async (id) => await databases.getDocument(databaseId, col.id, id),
 
     list: async (queries) => {
-      const queryStrings = queries?.map(query => query.toString());
+      const queryStrings = queries?.map((query) => query.toString());
       return await databases.listDocuments(databaseId, col.id, queryStrings);
     },
 

@@ -13,6 +13,7 @@ import { ArrowUpDown, Search, PlusCircle, FileText, ChevronLeft, ChevronRight, X
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import FileUploader from './DocUpload' // Assuming DocUpload is the FileUploader component
 import storageServices from '@/app/appwrite/Services/storageServices' // Ensure correct path
+import { getCurrentUser } from '@/app/appwrite/Services/authServices' // Assuming this service gets the user
 
 type Document = {
   id: string;
@@ -27,14 +28,23 @@ export default function DocumentCards() {
   const [filter, setFilter] = useState<string>('')
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [isModalOpen, setIsModalOpen] = useState(false) // State to control modal visibility
+  const [userId, setUserId] = useState<string | null>(null) // State to store userId
   const documentsPerPage = 12 // Set the number of documents per page
+
+  // Fetch userId (Assume getCurrentUser returns a promise that resolves to the current user object)
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const user = await getCurrentUser();
+      setUserId(user?.$id || null); // Set userId to state
+    };
+    fetchUserId();
+  }, []);
 
   // Fetch documents from the Appwrite storage bucket
   useEffect(() => {
     const fetchDocuments = async () => {
       const storageId = process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!
-      
-      
+
       const storage = storageServices.files;
 
       if (!storage) {
@@ -57,6 +67,7 @@ export default function DocumentCards() {
             uploadTime: file.$createdAt,
             size: file.sizeOriginal,
           }))
+          console.log(fetchedDocuments)
           setDocuments(fetchedDocuments)
         }
       } catch (error) {
@@ -164,8 +175,7 @@ export default function DocumentCards() {
                 </CardHeader>
                 <CardContent className="p-2">
                   <p className="text-xs text-gray-500 text-center">{doc.format} • {(doc.size / 1048576).toFixed(2)} MB</p>
-                </CardContent>`
-
+                </CardContent>
                 <CardFooter className="text-xs text-gray-400 justify-center p-2">
                   {formatDate(doc.uploadTime)}
                 </CardFooter>
@@ -206,7 +216,8 @@ export default function DocumentCards() {
             >
               <X className="h-5 w-5" />
             </button>
-            <FileUploader onClose={closeModal} />
+            {/* Pass both onClose and userId */}
+            {userId && <FileUploader onClose={closeModal} userId={userId} />}
           </div>
         </div>
       )}

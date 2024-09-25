@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
       
       // Redirect to confirmation page after a delay
       setTimeout(() => {
-        router.push('/forgot-password-confirmation')
+        router.push('/login')
       }, 2000)
     } catch (error) {
       setError('There was an issue sending the reset link. Please try again.')

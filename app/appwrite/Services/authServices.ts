@@ -50,6 +50,17 @@ export const signInWithGoogle = async (): Promise<void> => {
       `${window.location.origin}/dashboard`,
       `${window.location.origin}/sign-in`
     );
+    
+    // Create a session object (customize the contents as necessary)
+    const sessionData = {
+      provider: 'Google',
+      isAuthenticated: true,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Store session data in local storage
+    localStorage.setItem('session', JSON.stringify(sessionData));
+
   } catch (error) {
     console.error("Google Sign-in error:", error);
     throw error;
@@ -64,11 +75,23 @@ export const signInWithGitHub = async (): Promise<void> => {
       `${window.location.origin}/dashboard`,
       `${window.location.origin}/sign-in`
     );
+
+    // Create a session object (customize the contents as necessary)
+    const sessionData = {
+      provider: 'GitHub',
+      isAuthenticated: true,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Store session data in local storage
+    localStorage.setItem('session', JSON.stringify(sessionData));
+
   } catch (error) {
     console.error("GitHub Sign-in error:", error);
     throw error;
   }
 };
+
 
 // Sign out the current user
 export const signOutUser = async (): Promise<void> => {
