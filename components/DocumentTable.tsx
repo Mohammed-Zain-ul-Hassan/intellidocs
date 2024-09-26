@@ -12,8 +12,8 @@ import {
 import { ArrowUpDown, Search, PlusCircle, FileText, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import FileUploader from './DocUpload' // Assuming DocUpload is the FileUploader component
-import storageServices from '@/app/appwrite/Services/storageServices' // Ensure correct path
 import { getCurrentUser } from '@/app/appwrite/Services/authServices' // Assuming this service gets the user
+import { Client, Storage, Databases, Query,Models } from 'appwrite' // Import Appwrite SDK
 
 type Document = {
   id: string;
@@ -23,6 +23,11 @@ type Document = {
   size: number; // Size in bytes
 };
 
+interface UserDoc extends Models.Document {
+  userId: string;
+  documentIds: string[];
+}
+
 export default function DocumentCards() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [filter, setFilter] = useState<string>('')
@@ -30,6 +35,14 @@ export default function DocumentCards() {
   const [isModalOpen, setIsModalOpen] = useState(false) // State to control modal visibility
   const [userId, setUserId] = useState<string | null>(null) // State to store userId
   const documentsPerPage = 12 // Set the number of documents per page
+
+  // Initialize Appwrite
+  const client = new Client()
+    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!) // Your Appwrite endpoint
+    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!) // Your Appwrite project ID
+
+  const storage = new Storage(client)
+  const databases = new Databases(client)
 
   // Fetch userId (Assume getCurrentUser returns a promise that resolves to the current user object)
   useEffect(() => {
@@ -42,40 +55,61 @@ export default function DocumentCards() {
 
   // Fetch documents from the Appwrite storage bucket
   useEffect(() => {
+    if (!userId) return;
+
     const fetchDocuments = async () => {
-      const storageId = process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!
-
-      const storage = storageServices.files;
-
-      if (!storage) {
-        console.error(`Storage service with ID "${storageId}" not found`)
-        return
-      }
-
       try {
-        const files = await storage.listFiles()
-        if (files.total === 0) {
-          // No documents available
-          console.log('no files yet')
-          setDocuments([])
-        } else {
-          console.log('files do exist')
-          const fetchedDocuments: Document[] = files.files.map((file) => ({
-            id: file.$id,
-            name: file.name,
-            format: file.mimeType.split('/').pop() || 'Unknown',
-            uploadTime: file.$createdAt,
-            size: file.sizeOriginal,
-          }))
-          console.log(fetchedDocuments)
-          setDocuments(fetchedDocuments)
+        const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+        const userDocsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_USERDOC_ID!; 
+
+        // Fetch the userDocs document for this userId
+        const userDocResponse = await databases.listDocuments<UserDoc>(
+          databaseId,
+          userDocsCollectionId,
+          [Query.equal('userId', userId)]
+        );
+
+        if (userDocResponse.total === 0) {
+          // No documents for this user
+          console.log('No documents for this user');
+          setDocuments([]);
+          return;
         }
+
+        const userDoc = userDocResponse.documents[0];
+        const documentIds = userDoc.documentIds; // This is an array of strings (file IDs)
+
+        if (documentIds.length === 0) {
+          // User has no documents
+          console.log('User has no documents');
+          setDocuments([]);
+          return;
+        }
+
+        // Now fetch the files from storage using these IDs
+        const bucketId = process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!; // The storage bucket ID
+
+        // Fetch files by IDs
+        const files = await Promise.all(documentIds.map(id => storage.getFile(bucketId, id)));
+
+        // Map the files to 'Document' type
+        const fetchedDocuments: Document[] = files.map((file) => ({
+          id: file.$id,
+          name: file.name,
+          format: file.mimeType.split('/').pop() || 'Unknown',
+          uploadTime: file.$createdAt,
+          size: file.sizeOriginal,
+        }));
+
+        setDocuments(fetchedDocuments);
+
       } catch (error) {
-        console.error('Error fetching documents:', error)
+        console.error('Error fetching documents:', error);
       }
-    }
-    fetchDocuments()
-  }, [])
+    };
+
+    fetchDocuments();
+  }, [userId]);
 
   const handleSort = (key: keyof Document) => {
     const sortedDocuments = [...documents].sort((a, b) => {
