@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -14,6 +15,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import FileUploader from './DocUpload' // Assuming DocUpload is the FileUploader component
 import { getCurrentUser } from '@/app/appwrite/Services/authServices' // Assuming this service gets the user
 import { Client, Storage, Databases, Query,Models } from 'appwrite' // Import Appwrite SDK
+import { useRouter } from 'next/navigation'
 
 type Document = {
   id: string;
@@ -35,6 +37,8 @@ export default function DocumentCards() {
   const [isModalOpen, setIsModalOpen] = useState(false) // State to control modal visibility
   const [userId, setUserId] = useState<string | null>(null) // State to store userId
   const documentsPerPage = 12 // Set the number of documents per page
+
+  const router = useRouter();
 
   // Initialize Appwrite
   const client = new Client()
@@ -148,6 +152,10 @@ export default function DocumentCards() {
     setIsModalOpen(false) // Close modal
   }
 
+  const handleDocumentClick = (docId: string) => {
+    router.push(`/document/${docId}`); // Navigate to the document page
+  }
+
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
 
   // Total number of pages
@@ -200,42 +208,36 @@ export default function DocumentCards() {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {currentDocuments.map((doc) => (
-              <Card key={doc.id} className="flex flex-col bg-gray-100 hover:shadow-lg transition-shadow duration-200">
-                <CardHeader className="flex-grow p-4">
-                  <div className="flex justify-center mb-2">
-                    <FileText className="h-8 w-8 text-blue-500" />
-                  </div>
-                  <CardTitle className="text-center text-sm truncate">{doc.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-2">
-                  <p className="text-xs text-gray-500 text-center">{doc.format} • {(doc.size / 1048576).toFixed(2)} MB</p>
-                </CardContent>
-                <CardFooter className="text-xs text-gray-400 justify-center p-2">
-                  {formatDate(doc.uploadTime)}
-                </CardFooter>
-              </Card>
+              <div key={doc.id} onClick={() => handleDocumentClick(doc.id)} className="cursor-pointer">
+                <Card className="flex flex-col bg-gray-100 hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader className="flex-grow p-4">
+                    <div className="flex justify-center mb-2">
+                      <FileText className="h-8 w-8 text-blue-500" />
+                    </div>
+                    <CardTitle className="text-center text-sm truncate">{doc.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-2">
+                    <p className="text-xs text-gray-500 text-center">{doc.format} • {(doc.size / 1048576).toFixed(2)} MB</p>
+                  </CardContent>
+                  <CardFooter className="text-xs text-gray-400 justify-center p-2">
+                    {formatDate(doc.uploadTime)}
+                  </CardFooter>
+                </Card>
+              </div>
             ))}
           </div>
-          <div className="flex justify-center mt-6">
-            <Button 
-              variant="outline" 
-              onClick={() => paginate(currentPage - 1)} 
-              disabled={currentPage === 1}
-              className="mr-2"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="mx-4 self-center">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button 
-              variant="outline" 
-              onClick={() => paginate(currentPage + 1)} 
-              disabled={currentPage === totalPages}
-              className="ml-2"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <div className="flex justify-center items-center gap-2 mt-6">
+            {currentPage > 1 && (
+              <Button variant="outline" onClick={() => paginate(currentPage - 1)}>
+                <ChevronLeft />
+              </Button>
+            )}
+            <p className="text-sm text-gray-500">{`Page ${currentPage} of ${totalPages}`}</p>
+            {currentPage < totalPages && (
+              <Button variant="outline" onClick={() => paginate(currentPage + 1)}>
+                <ChevronRight />
+              </Button>
+            )}
           </div>
         </>
       )}
