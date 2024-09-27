@@ -79,8 +79,8 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="p-2 md:p-4 z-50 bg-transparent">
-      <div className="flex justify-between items-center py-0 max-w-7xl mx-auto">
+    <nav className="p-[5px] pt-0 md:p-[10px] md:pt-0 z-50 bg-transparent">
+      <div className="flex justify-between items-center py-0 max-w-7xl mx-auto mb-0">
         <Image
           src={isSmallScreen ? Logo : Logo}
           alt="IntelliDocs"

@@ -131,7 +131,7 @@ export default function Component() {
   const currentDocumentId = window.location.pathname.split('/').pop(); // Get the document ID from the URL
 
   return (
-    <div className="flex h-[85%] w-full max-w-screen max-h-screen gap-4 p-4">
+    <div className="flex h-[87%] pt-[2px] w-full max-w-screen max-h-screen gap-4 p-4">
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap');
         
