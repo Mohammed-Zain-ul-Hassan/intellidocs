@@ -1,7 +1,6 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -11,18 +10,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ArrowUpDown, Search, PlusCircle, FileText, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import FileUploader from './DocUpload'
+import { getCurrentUser } from '@/app/appwrite/Services/authServices' 
+import { Client, Storage, Databases, Query, Models } from 'appwrite' 
+import { useRouter, usePathname } from 'next/navigation'
+import { usePdfStore } from '@/stores/pdfStore'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import FileUploader from './DocUpload' // Assuming DocUpload is the FileUploader component
-import { getCurrentUser } from '@/app/appwrite/Services/authServices' // Assuming this service gets the user
-import { Client, Storage, Databases, Query,Models } from 'appwrite' // Import Appwrite SDK
-import { useRouter } from 'next/navigation'
 
 type Document = {
   id: string;
   name: string;
   format: string;
   uploadTime: string;
-  size: number; // Size in bytes
+  size: number;
 };
 
 interface UserDoc extends Models.Document {
@@ -30,32 +30,45 @@ interface UserDoc extends Models.Document {
   documentIds: string[];
 }
 
+const client = new Client()
+  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+
+const storage = new Storage(client);
+const databases = new Databases(client);
+
 export default function DocumentCards() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [filter, setFilter] = useState<string>('')
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [isModalOpen, setIsModalOpen] = useState(false) // State to control modal visibility
   const [userId, setUserId] = useState<string | null>(null) // State to store userId
+  const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null)
+  const setParsedText = usePdfStore((state) => state.setParsedText);
   const documentsPerPage = 12 // Set the number of documents per page
 
   const router = useRouter();
-
-  // Initialize Appwrite
-  const client = new Client()
-    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!) // Your Appwrite endpoint
-    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!) // Your Appwrite project ID
-
-  const storage = new Storage(client)
-  const databases = new Databases(client)
+  const pathname = usePathname();
 
   // Fetch userId (Assume getCurrentUser returns a promise that resolves to the current user object)
   useEffect(() => {
     const fetchUserId = async () => {
-      const user = await getCurrentUser();
-      setUserId(user?.$id || null); // Set userId to state
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          setUserId(user.$id);
+        }
+      } catch (error) {
+      }
     };
     fetchUserId();
   }, []);
+
+  // Add this useEffect to get current document ID from URL
+  useEffect(() => {
+    const id = pathname?.split('/').pop();
+    if (id) setCurrentDocumentId(id);
+  }, [pathname]);
 
   // Fetch documents from the Appwrite storage bucket
   useEffect(() => {
@@ -64,9 +77,8 @@ export default function DocumentCards() {
     const fetchDocuments = async () => {
       try {
         const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-        const userDocsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_USERDOC_ID!; 
+        const userDocsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_USERDOC_ID!;
 
-        // Fetch the userDocs document for this userId
         const userDocResponse = await databases.listDocuments<UserDoc>(
           databaseId,
           userDocsCollectionId,
@@ -74,30 +86,27 @@ export default function DocumentCards() {
         );
 
         if (userDocResponse.total === 0) {
-          // No documents for this user
-          console.log('No documents for this user');
           setDocuments([]);
           return;
         }
 
         const userDoc = userDocResponse.documents[0];
-        const documentIds = userDoc.documentIds; // This is an array of strings (file IDs)
 
-        if (documentIds.length === 0) {
-          // User has no documents
-          console.log('User has no documents');
-          setDocuments([]);
-          return;
-        }
+        const bucketId = process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!;
+        const fetchedFiles = await Promise.all(
+          userDoc.documentIds.map(async (id) => {
+            try {
+              const file = await storage.getFile(bucketId, id);
+              return file;
+            } catch (error) {
+              return null;
+            }
+          })
+        );
 
-        // Now fetch the files from storage using these IDs
-        const bucketId = process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!; // The storage bucket ID
+        const validFiles = fetchedFiles.filter((file): file is Models.File => file !== null);
 
-        // Fetch files by IDs
-        const files = await Promise.all(documentIds.map(id => storage.getFile(bucketId, id)));
-
-        // Map the files to 'Document' type
-        const fetchedDocuments: Document[] = files.map((file) => ({
+        const fetchedDocuments: Document[] = validFiles.map((file) => ({
           id: file.$id,
           name: file.name,
           format: file.mimeType.split('/').pop() || 'Unknown',
@@ -108,7 +117,6 @@ export default function DocumentCards() {
         setDocuments(fetchedDocuments);
 
       } catch (error) {
-        console.error('Error fetching documents:', error);
       }
     };
 
@@ -152,9 +160,45 @@ export default function DocumentCards() {
     setIsModalOpen(false) // Close modal
   }
 
-  const handleDocumentClick = (docId: string) => {
-    router.push(`/document/${docId}`); // Navigate to the document page
-  }
+  const parsePdf = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/pdf-parser', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        throw new Error(`Failed to parse PDF: ${response.status} ${response.statusText}\n${responseText}`);
+      }
+
+      const data = JSON.parse(responseText);
+      return data.text;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleDocumentClick = async (docId: string) => {
+    try {
+      const bucketId = process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!;
+      const file = await storage.getFileDownload(bucketId, docId);
+
+      const response = await fetch(file.href);
+      const blob = await response.blob();
+      const pdfFile = new File([blob], 'document.pdf', { type: 'application/pdf' });
+
+      const parsedText = await parsePdf(pdfFile);
+      setParsedText(parsedText);
+      
+      router.push(`/document/${docId}`);
+    } catch (error) {
+    }
+  };
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
 
@@ -205,7 +249,7 @@ export default function DocumentCards() {
       {documents.length === 0 ? (
         <p className="text-center text-gray-500">No documents yet</p>
       ) : (
-        <>
+        <div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {currentDocuments.map((doc) => (
               <div key={doc.id} onClick={() => handleDocumentClick(doc.id)} className="cursor-pointer">
@@ -217,13 +261,15 @@ export default function DocumentCards() {
                     <CardTitle className="text-center text-sm truncate">{doc.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="p-2">
-                    <p className="text-xs text-gray-500 text-center">{doc.format} • {(doc.size / 1048576).toFixed(2)} MB</p>
+                    <p className="text-xs text-gray-500 text-center">
+                      {doc.format} • {(doc.size / 1048576).toFixed(2)} MB
+                    </p>
                   </CardContent>
                   <CardFooter className="text-xs text-gray-400 justify-center p-2">
                     {formatDate(doc.uploadTime)}
                   </CardFooter>
                 </Card>
-              </div>
+                </div>
             ))}
           </div>
           <div className="flex justify-center items-center gap-2 mt-6">
@@ -239,7 +285,7 @@ export default function DocumentCards() {
               </Button>
             )}
           </div>
-        </>
+        </div>
       )}
 
       {/* Modal for adding document */}

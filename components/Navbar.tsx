@@ -40,7 +40,6 @@ export default function Navbar() {
           setUser(currentUser)
         }
       } catch (error) {
-        console.error("Error fetching user session:", error)
         setIsLoggedIn(false)
         setUser(null)
       }
@@ -66,7 +65,7 @@ export default function Navbar() {
       setUser(null)
       router.push("/login")
     } catch (error) {
-      console.error("Error during logout:", error)
+      // Remove console.error("Error during logout:", error)
     }
   }
 
