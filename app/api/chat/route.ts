@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 if (!apiKey) {
@@ -13,9 +13,10 @@ export async function POST(request: NextRequest) {
     const { message, context } = await request.json();
     
     if (!context) {
-      return NextResponse.json({ 
-        message: "I need the document content to answer your question." 
-      });
+      return new Response(
+        JSON.stringify({ message: "I need the document content to answer your question." }),
+        { headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
@@ -32,15 +33,43 @@ export async function POST(request: NextRequest) {
       If the answer cannot be found in the document, please say so clearly.
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    // Create encoder for converting chunks to text
+    const encoder = new TextEncoder();
 
-    return NextResponse.json({ message: text });
+    // Create a new ReadableStream
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const result = await model.generateContentStream(prompt);
+          
+          for await (const chunk of result.stream) {
+            const text = chunk.text();
+            if (text) {
+              controller.enqueue(encoder.encode(`${text}`));
+            }
+          }
+          
+          controller.close();
+        } catch (error) {
+          controller.error(error);
+        }
+      }
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'An unknown error occurred' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'An unknown error occurred' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
 }

@@ -5,16 +5,24 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import ReactMarkdown from 'react-markdown'
 
 interface Message {
   id: number;
   text: string;
   sender: 'ai' | 'user';
+  isStreaming?: boolean;
 }
 
 interface ChatPageProps {
   pdfContext: string | null;
 }
+
+const LoadingDot = () => (
+  <div className="inline-block">
+    <span className="loading-dot">•</span>
+  </div>
+);
 
 export default function ChatPage({ pdfContext }: ChatPageProps) {
   const [messages, setMessages] = useState<Message[]>([
@@ -34,17 +42,23 @@ export default function ChatPage({ pdfContext }: ChatPageProps) {
     if (!input.trim() || isTyping) return;
 
     try {
-      // Add user message
       const userMessage: Message = {
         id: messages.length + 1,
         text: input,
         sender: 'user'
       };
-      setMessages(prev => [...prev, userMessage]);
+
+      const aiMessage: Message = {
+        id: messages.length + 2,
+        text: '',
+        sender: 'ai',
+        isStreaming: true
+      };
+
+      setMessages(prev => [...prev, userMessage, aiMessage]);
       setInput('');
       setIsTyping(true);
 
-      // Send to API
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -60,16 +74,35 @@ export default function ChatPage({ pdfContext }: ChatPageProps) {
         throw new Error('Failed to get response');
       }
 
-      const data = await response.json();
-      setIsTyping(false);
+      if (!response.body) {
+        throw new Error('No response body');
+      }
 
-      // Add AI response
-      const aiMessage: Message = {
-        id: messages.length + 2,
-        text: data.message,
-        sender: 'ai'
-      };
-      setMessages(prev => [...prev, aiMessage]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMessage.id 
+              ? { ...msg, text: accumulatedText, isStreaming: false }
+              : msg
+          ));
+          break;
+        }
+
+        const chunk = decoder.decode(value);
+        accumulatedText += chunk;
+        
+        setMessages(prev => prev.map(msg =>
+          msg.id === aiMessage.id ? { ...msg, text: accumulatedText } : msg
+        ));
+      }
+
+      setIsTyping(false);
 
     } catch (error) {
       console.error('Error:', error);
@@ -89,7 +122,7 @@ export default function ChatPage({ pdfContext }: ChatPageProps) {
         <div className="mt-2 border-t border-gray-200"></div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <AnimatePresence>
+        <AnimatePresence mode="sync">
           {messages.map((message) => (
             <motion.div
               key={message.id}
@@ -106,22 +139,18 @@ export default function ChatPage({ pdfContext }: ChatPageProps) {
                     : 'message-user text-white'
                 }`}
               >
-                <p className="text-sm">{message.text}</p>
+                {message.sender === 'ai' ? (
+                  <div className="markdown-content">
+                    <ReactMarkdown>{message.text}</ReactMarkdown>
+                    {message.isStreaming  && <LoadingDot />}
+                  </div>
+                ) : (
+                  <p className="text-sm">{message.text}</p>
+                )}
               </div>
             </motion.div>
           ))}
         </AnimatePresence>
-        {isTyping && (
-          <div className="flex items-center space-x-2">
-            <div className="bg-gray-50 rounded-lg px-4 py-2">
-              <div className="typing-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            </div>
-          </div>
-        )}
         <div ref={messagesEndRef} />
       </div>
       <div className="p-4 border-t bg-white tech-border relative">
@@ -146,10 +175,75 @@ export default function ChatPage({ pdfContext }: ChatPageProps) {
         </div>
       </div>
       <style jsx global>{`
-        @keyframes pulse {
-          0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
-          70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+        .loading-dot {
+          display: inline-block;
+          animation: blink 1s infinite;
+          font-size: 2.5rem;  /* Increased from 1.5rem */
+          line-height: 0;
+          color: #3b82f6;
+          vertical-align: middle;  /* Added to better align with text */
+          margin-left: 0.25rem;   /* Added some spacing */
+        }
+
+        @keyframes blink {
+          0% { opacity: 0.2; }
+          50% { opacity: 1; }
+          100% { opacity: 0.2; }
+        }
+
+        .markdown-content {
+          font-size: 0.875rem;
+        }
+        
+        .markdown-content h1 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin: 1rem 0;
+        }
+        
+        .markdown-content h2 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          margin: 0.75rem 0;
+        }
+        
+        .markdown-content h3 {
+          font-size: 1.125rem;
+          font-weight: 600;
+          margin: 0.5rem 0;
+        }
+        
+        .markdown-content p {
+          margin: 0.5rem 0;
+        }
+        
+        .markdown-content ul {
+          list-style-type: disc;
+          margin-left: 1.5rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .markdown-content ol {
+          list-style-type: decimal;
+          margin-left: 1.5rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .markdown-content strong {
+          font-weight: 600;
+        }
+        
+        .markdown-content em {
+          font-style: italic;
+        }
+        
+        .markdown-content code {
+          background-color: rgba(0, 0, 0, 0.05);
+          padding: 0.2rem 0.4rem;
+          border-radius: 0.25rem;
+          font-family: monospace;
         }
 
         .message-ai {
@@ -160,27 +254,6 @@ export default function ChatPage({ pdfContext }: ChatPageProps) {
         .message-user {
           background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
           box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
-        }
-
-        .chat-container {
-          background-color: #ffffff;
-          position: relative;
-        }
-
-        .typing-indicator span {
-          height: 8px;
-          width: 8px;
-          float: left;
-          margin: 0 1px;
-          background-color: #60a5fa;
-          display: block;
-          border-radius: 50%;
-          opacity: 0.4;
-          animation: blink 1s infinite;
-        }
-
-        @keyframes blink {
-          50% { opacity: 1; }
         }
 
         .tech-border::before {

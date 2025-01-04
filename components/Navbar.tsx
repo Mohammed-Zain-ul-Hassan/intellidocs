@@ -16,8 +16,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { User, LogOut, Menu } from "lucide-react"
-
+import { User, LogOut} from "lucide-react"
+// Menu was imported from lucide-react
 interface User {
   name: string
   email: string
@@ -27,7 +27,7 @@ interface User {
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isSmallScreen, setIsSmallScreen] = useState(false)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  //const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const router = useRouter()
 
@@ -73,9 +73,9 @@ export default function Navbar() {
     router.push("/")
   }
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen)
-  }
+  // const toggleMenu = () => {
+  //   setIsMenuOpen(!isMenuOpen)
+  // }
 
   return (
     <nav className="p-[5px] pt-0 md:p-[10px] md:pt-0 z-50 bg-transparent">
@@ -88,7 +88,8 @@ export default function Navbar() {
           className="cursor-pointer"
           onClick={handleLogoClick}
         />
-        {isSmallScreen ? (
+        {renderNavItems()}
+        {/*</div> {isSmallScreen ? (
           <Button 
             variant="outline" 
             onClick={toggleMenu} 
@@ -100,15 +101,15 @@ export default function Navbar() {
           <div className="flex space-x-2 md:space-x-4 items-center">
             {renderNavItems()}
           </div>
-        )}
+        )} */}
       </div>
-      {isSmallScreen && isMenuOpen && (
+      {/* {isSmallScreen && isMenuOpen && (
         <div className="absolute right-4 top-12 mt-2 space-y-2 bg-transparent p-4 rounded-lg shadow-md">
           <div className="flex flex-col items-end space-y-2">
             {renderNavItems()}
           </div>
         </div>
-      )}
+      )} */}
     </nav>
   )
 
@@ -147,21 +148,21 @@ export default function Navbar() {
         </DropdownMenuContent>
       </DropdownMenu>
     ) : (
-      <>
+      <div>
         <button
-          className="w-24 px-3 font-bold py-1 md:px-4 md:py-2 border text-white border-blue-600 rounded-md cursor-pointer transition-all duration-300 ease-in-out hover:bg-blue-600 hover:text-white transform hover:scale-105 text-xs md:text-sm"
+          className="w-24 mx-2 px-3 font-bold py-1 md:px-4 md:py-2 border text-white border-blue-600 rounded-md cursor-pointer transition-all duration-300 ease-in-out hover:bg-blue-600 hover:text-white transform hover:scale-105 text-xs md:text-sm"
           onClick={() => router.push("/signup")}
         >
           Sign Up
         </button>
         <button
-          className="w-24 px-3 font-bold py-1 md:px-4 md:py-2 bg-blue-600 text-white rounded-md cursor-pointer transition-all duration-300 ease-in-out hover:bg-blue-700 hover:text-blue-100 transform hover:scale-105 text-xs md:text-sm"
+          className="w-24 mx-2 px-3 font-bold py-1 md:px-4 md:py-2 bg-blue-600 text-white rounded-md cursor-pointer transition-all duration-300 ease-in-out hover:bg-blue-700 hover:text-blue-100 transform hover:scale-105 text-xs md:text-sm"
           onClick={() => router.push("/login")}
         >
           Login
         </button>
 
-      </>
+      </div>
     )
   }
 }
