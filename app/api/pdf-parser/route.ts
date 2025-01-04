@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pdf from 'pdf-parse/lib/pdf-parse';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// Remove the deprecated export config
+// Set route-specific options using the new `routeSegmentConfig` (recommended).
+export const dynamic = 'force-dynamic'; // Forces dynamic rendering, similar to disabling `bodyParser`.
 
 export async function GET() {
-  return NextResponse.json({ message: "PDF parser route is working" });
+  return NextResponse.json({ message: 'PDF parser route is working' });
 }
 
 export async function POST(request: NextRequest) {
