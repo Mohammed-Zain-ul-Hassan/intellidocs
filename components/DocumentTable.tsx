@@ -9,10 +9,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowUpDown, Search, PlusCircle, FileText, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ArrowUpDown, Search, PlusCircle, FileText, ChevronLeft, ChevronRight, X, Trash2 } from 'lucide-react'
 import FileUploader from './DocUpload'
 import { getCurrentUser } from '@/app/appwrite/Services/authServices' 
-import { Client, Storage, Databases, Query, Models } from 'appwrite' 
+import { Client, Storage, Databases, Query, Models, QueryTypes } from 'appwrite' 
 import { useRouter} from 'next/navigation'
 // , usePathname  was also imported
 import { usePdfStore } from '@/stores/pdfStore'
@@ -71,57 +71,58 @@ export default function DocumentCards() {
   //   if (id) setCurrentDocumentId(id);
   // }, [pathname]);
 
+  const fetchDocuments = async () => {
+    try {
+      const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+      const userDocsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_USERDOC_ID!;
+
+      const userDocResponse = await databases.listDocuments<UserDoc>(
+        databaseId,
+        userDocsCollectionId,
+        [Query.equal('userId', userId as QueryTypes)]
+      );
+
+      if (userDocResponse.total === 0) {
+        setDocuments([]);
+        return;
+      }
+
+      const userDoc = userDocResponse.documents[0];
+
+      const bucketId = process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!;
+      const fetchedFiles = await Promise.all(
+        userDoc.documentIds.map(async (id) => {
+          try {
+            const file = await storage.getFile(bucketId, id);
+            return file;
+          } catch (error) {
+            return null;
+          }
+        })
+      );
+
+      const validFiles = fetchedFiles.filter((file): file is Models.File => file !== null);
+
+      const fetchedDocuments: Document[] = validFiles.map((file) => ({
+        id: file.$id,
+        name: file.name,
+        format: file.mimeType.split('/').pop() || 'Unknown',
+        uploadTime: file.$createdAt,
+        size: file.sizeOriginal,
+      }));
+
+      setDocuments(fetchedDocuments);
+
+    } catch (error) {
+    }
+  };
+
   // Fetch documents from the Appwrite storage bucket
   useEffect(() => {
     if (!userId) return;
 
-    const fetchDocuments = async () => {
-      try {
-        const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-        const userDocsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_USERDOC_ID!;
-
-        const userDocResponse = await databases.listDocuments<UserDoc>(
-          databaseId,
-          userDocsCollectionId,
-          [Query.equal('userId', userId)]
-        );
-
-        if (userDocResponse.total === 0) {
-          setDocuments([]);
-          return;
-        }
-
-        const userDoc = userDocResponse.documents[0];
-
-        const bucketId = process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!;
-        const fetchedFiles = await Promise.all(
-          userDoc.documentIds.map(async (id) => {
-            try {
-              const file = await storage.getFile(bucketId, id);
-              return file;
-            } catch (error) {
-              return null;
-            }
-          })
-        );
-
-        const validFiles = fetchedFiles.filter((file): file is Models.File => file !== null);
-
-        const fetchedDocuments: Document[] = validFiles.map((file) => ({
-          id: file.$id,
-          name: file.name,
-          format: file.mimeType.split('/').pop() || 'Unknown',
-          uploadTime: file.$createdAt,
-          size: file.sizeOriginal,
-        }));
-
-        setDocuments(fetchedDocuments);
-
-      } catch (error) {
-      }
-    };
-
     fetchDocuments();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, isModalOpen]);
 
   const handleSort = (key: keyof Document) => {
@@ -201,6 +202,23 @@ export default function DocumentCards() {
     }
   };
 
+  const deleteDocument = async (id : string) => {
+    try {
+      // Delete the document using the db service
+      //await db['documents'].delete(id); // Make sure 'documents' matches your collection name
+      await storage.deleteFile(process.env.NEXT_PUBLIC_APPWRITE_FILES_ID!,id);
+      // Optionally, you can filter the document out from the currentDocuments state
+      // to immediately reflect the change in the UI
+      alert('Document deleted successfully!');
+      await fetchDocuments();
+      // Optionally, you could update your state to reflect the change:
+      // setDocuments(documents.filter(doc => doc.id !== id)); 
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Error deleting the document.');
+    }
+  };
+
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
 
   // Total number of pages
@@ -252,27 +270,44 @@ export default function DocumentCards() {
       ) : (
         <div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {currentDocuments.map((doc) => (
-              <div key={doc.id} onClick={() => handleDocumentClick(doc.id)} className="cursor-pointer">
-                <Card className="flex flex-col bg-gray-100 hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader className="flex-grow p-4">
-                    <div className="flex justify-center mb-2">
-                      <FileText className="h-8 w-8 text-blue-500" />
-                    </div>
-                    <CardTitle className="text-center text-sm truncate">{doc.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-2">
-                    <p className="text-xs text-gray-500 text-center">
-                      {doc.format} • {(doc.size / 1048576).toFixed(2)} MB
-                    </p>
-                  </CardContent>
-                  <CardFooter className="text-xs text-gray-400 justify-center p-2">
-                    {formatDate(doc.uploadTime)}
-                  </CardFooter>
-                </Card>
-                </div>
-            ))}
-          </div>
+          {currentDocuments.map((doc) => (
+            <div
+              key={doc.id}
+              onClick={() => handleDocumentClick(doc.id)} // Card click triggers this function
+              className="cursor-pointer group"
+            >
+              <Card className="flex flex-col bg-gray-100 hover:shadow-lg transition-shadow duration-200">
+                <CardHeader className="flex-grow p-4">
+                  <div className="flex justify-center mb-2">
+                    <FileText className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <CardTitle className="text-center text-sm truncate">{doc.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-2">
+                  <p className="text-xs text-gray-500 text-center">
+                    {doc.format} • {(doc.size / 1048576).toFixed(2)} MB
+                  </p>
+                </CardContent>
+                <CardFooter className="text-xs text-gray-400 justify-between items-center p-2">
+                  <span>{formatDate(doc.uploadTime)}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering the onClick of the Card
+                      deleteDocument(doc.id); // Delete the document
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500 hover:text-red-700" />
+                    <span className="sr-only">Delete</span>
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          ))}
+
+    </div>
           <div className="flex justify-center items-center gap-2 mt-6">
             {currentPage > 1 && (
               <Button variant="outline" onClick={() => paginate(currentPage - 1)}>
