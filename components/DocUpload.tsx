@@ -125,6 +125,7 @@ export default function DocUpload({ onClose, userId }: { onClose: () => void; us
       setParsedText(parsedText); // Update Zustand store with parsed text
 
       setUploadSuccess(true);
+      onClose();
     } catch (error) {
       console.error('Upload failed:', error);
     } finally {

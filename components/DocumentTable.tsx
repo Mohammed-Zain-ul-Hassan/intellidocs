@@ -122,7 +122,7 @@ export default function DocumentCards() {
     };
 
     fetchDocuments();
-  }, [userId]);
+  }, [userId, isModalOpen]);
 
   const handleSort = (key: keyof Document) => {
     const sortedDocuments = [...documents].sort((a, b) => {
@@ -158,7 +158,7 @@ export default function DocumentCards() {
   }
 
   const closeModal = () => {
-    setIsModalOpen(false) // Close modal
+    setIsModalOpen(false) // Close modal    
   }
 
   const parsePdf = async (file: File): Promise<string> => {
