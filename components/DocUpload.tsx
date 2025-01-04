@@ -153,7 +153,7 @@ export default function DocUpload({ onClose, userId }: { onClose: () => void; us
               <Input {...getInputProps()} id="file-upload" className="sr-only" />
               <UploadIcon className="mx-auto h-12 w-12 text-gray-400" />
               <p className="mt-2 text-sm text-gray-500">Drag & drop a file here, or click to select</p>
-              <p className="mt-1 text-xs text-gray-500">Supported formats: PDF, DOC, DOCX</p>
+              <p className="mt-1 text-xs text-gray-500">Supported Format: English PDF</p>
             </div>
           </div>
 
