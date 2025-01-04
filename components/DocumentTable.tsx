@@ -13,7 +13,8 @@ import { ArrowUpDown, Search, PlusCircle, FileText, ChevronLeft, ChevronRight, X
 import FileUploader from './DocUpload'
 import { getCurrentUser } from '@/app/appwrite/Services/authServices' 
 import { Client, Storage, Databases, Query, Models } from 'appwrite' 
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter} from 'next/navigation'
+// , usePathname  was also imported
 import { usePdfStore } from '@/stores/pdfStore'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -43,12 +44,12 @@ export default function DocumentCards() {
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [isModalOpen, setIsModalOpen] = useState(false) // State to control modal visibility
   const [userId, setUserId] = useState<string | null>(null) // State to store userId
-  const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null)
+  //const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null)
   const setParsedText = usePdfStore((state) => state.setParsedText);
   const documentsPerPage = 12 // Set the number of documents per page
 
   const router = useRouter();
-  const pathname = usePathname();
+  //const pathname = usePathname();
 
   // Fetch userId (Assume getCurrentUser returns a promise that resolves to the current user object)
   useEffect(() => {
@@ -65,10 +66,10 @@ export default function DocumentCards() {
   }, []);
 
   // Add this useEffect to get current document ID from URL
-  useEffect(() => {
-    const id = pathname?.split('/').pop();
-    if (id) setCurrentDocumentId(id);
-  }, [pathname]);
+  // useEffect(() => {
+  //   const id = pathname?.split('/').pop();
+  //   if (id) setCurrentDocumentId(id);
+  // }, [pathname]);
 
   // Fetch documents from the Appwrite storage bucket
   useEffect(() => {
